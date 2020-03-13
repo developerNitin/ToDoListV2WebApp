@@ -3,6 +3,7 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
+const _ = require("lodash");
 
 const app = express();
 
@@ -18,7 +19,7 @@ mongoose.connect("mongodb://localhost:27017/todolistdb", {
   useNewUrlParser: true,
   useUnifiedTopology: true
 });
-// ---------> itemsSchema
+//     ---------> itemsSchema
 const itemsSchema = new mongoose.Schema({
   name: String
 });
@@ -38,7 +39,7 @@ const item3 = new Item({
 });
 
 const defaultItem = [item1, item2, item3];
-// ---------> listSchema
+//     ---------> listSchema
 const listSchema = {
   name: String,
   items: [itemsSchema],
@@ -69,7 +70,7 @@ app.get("/", function(req, res) {
 });
 
 app.get("/:customListName", function(req, res) {
-  const listName = req.params.customListName;
+  const listName = _.capitalize(req.params.customListName);
 
   List.findOne({
     name: listName
@@ -116,14 +117,30 @@ app.post("/", function(req, res) {
 
 app.post("/delete", function(req, res) {
   const checkedItem = req.body.checkBox;
-  Item.findByIdAndRemove(checkedItem, function(err) {
-    if (err) {
-      console.log(err);
-    } else {
-      console.log("successfully removed");
-      res.redirect("/");
-    }
-  });
+  const listName = req.body.listName;
+
+  if (listName === "ToDoList") {
+    Item.findByIdAndRemove(checkedItem, function(err) {
+      if (!err) {
+        console.log("successfully removed");
+        res.redirect("/");
+      }
+    });
+  } else {
+    List.findOneAndUpdate({
+      name: listName
+    }, {
+      $pull: {
+        items: {
+          _id: checkedItem
+        }
+      }
+    }, function(err, foundList) {
+      if (!err) {
+        res.redirect("/" + listName);
+      }
+    });
+  }
 });
 
 
