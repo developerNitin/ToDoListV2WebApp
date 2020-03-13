@@ -62,7 +62,7 @@ app.get("/", function(req, res) {
     } else {
       res.render("list", {
         newListItems: foundItems,
-        listTitle: "toDoList"
+        listTitle: "ToDoList"
       });
     }
   });
@@ -71,46 +71,47 @@ app.get("/", function(req, res) {
 app.get("/:customListName", function(req, res) {
   const listName = req.params.customListName;
 
-
-  List.findOne({name: listName}, function(err, foundList) {
+  List.findOne({
+    name: listName
+  }, function(err, foundList) {
     if (!err) {
       if (!foundList) {
         const list = new List({
           name: listName,
-          items: defaultItem
+          items: defaultItem,
         });
         list.save();
         console.log("newOneCreated");
+        res.redirect("/" + listName);
       } else {
         res.render("list", {
-          listTitle: "Today",
-          newListItems: foundList
+          listTitle: foundList.name,
+          newListItems: foundList.items
         });
       }
     }
   });
 });
 
-app.get("/work", function(req, res) {
-  res.render("list", {
-    listTitle: "Work List",
-    newListItems: workItems
-  });
-});
-
-app.get("/about", function(req, res) {
-  res.render("about");
-});
-
-
 app.post("/", function(req, res) {
   const itemName = req.body.newItem;
+  const listName = req.body.list;
 
   const item = new Item({
     name: itemName,
   });
-  item.save();
-  res.redirect("/");
+  if (listName == "ToDoList") {
+    item.save();
+    res.redirect("/");
+  } else {
+    List.findOne({
+      name: listName
+    }, function(err, foundList) {
+      foundList.items.push(item);
+      foundList.save();
+      res.redirect("/" + listName);
+    });
+  }
 });
 
 app.post("/delete", function(req, res) {
