@@ -18,7 +18,7 @@ mongoose.connect("mongodb://localhost:27017/todolistdb", {
   useNewUrlParser: true,
   useUnifiedTopology: true
 });
-
+// ---------> itemsSchema
 const itemsSchema = new mongoose.Schema({
   name: String
 });
@@ -38,8 +38,13 @@ const item3 = new Item({
 });
 
 const defaultItem = [item1, item2, item3];
-//
+// ---------> listSchema
+const listSchema = {
+  name: String,
+  items: [itemsSchema],
+};
 
+const List = mongoose.model("List", listSchema);
 // --------->
 
 app.get("/", function(req, res) {
@@ -59,6 +64,29 @@ app.get("/", function(req, res) {
         newListItems: foundItems,
         listTitle: "toDoList"
       });
+    }
+  });
+});
+
+app.get("/:customListName", function(req, res) {
+  const listName = req.params.customListName;
+
+
+  List.findOne({name: listName}, function(err, foundList) {
+    if (!err) {
+      if (!foundList) {
+        const list = new List({
+          name: listName,
+          items: defaultItem
+        });
+        list.save();
+        console.log("newOneCreated");
+      } else {
+        res.render("list", {
+          listTitle: "Today",
+          newListItems: foundList
+        });
+      }
     }
   });
 });
